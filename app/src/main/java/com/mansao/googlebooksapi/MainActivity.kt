@@ -5,6 +5,8 @@ import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.widget.Toast
+import androidx.lifecycle.ViewModelProvider
+import com.bumptech.glide.Glide
 import com.loopj.android.http.AsyncHttpClient
 import com.loopj.android.http.AsyncHttpResponseHandler
 import com.mansao.googlebooksapi.databinding.ActivityMainBinding
@@ -14,13 +16,13 @@ import java.lang.Exception
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
+    private lateinit var bookViewModel: BookViewModel
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        binding.progressBar.visibility = View.INVISIBLE
-
+        bookViewModel = ViewModelProvider(this).get(BookViewModel::class.java)
         binding.btnSearch.setOnClickListener {
             searchBook()
         }
@@ -49,6 +51,7 @@ class MainActivity : AppCompatActivity() {
                     var bookTitle = ""
                     var bookAuthor = ""
                     var pages = ""
+                    var coverImageUrl = ""
 
                     while (i < itemsArray.length()) {
                         val book = itemsArray.getJSONObject(i)
@@ -56,18 +59,23 @@ class MainActivity : AppCompatActivity() {
                         try {
                             bookTitle = volumeInfo.getString("title")
                             bookAuthor = volumeInfo.getString("authors")
-                            pages = volumeInfo.getString("pages")
+                            pages = volumeInfo.optString("pageCount", "")
+                            val imageLinks = volumeInfo.getJSONObject("imageLinks")
+                            coverImageUrl = imageLinks.getString("thumbnail")
                         } catch (e: Exception) {
                             e.printStackTrace()
                         }
                         i++
                     }
 
-                    binding.apply {
-                        tvTitleResult.text = bookTitle
-                        tvAuthorResult.text = bookAuthor
-                        tvPages.text = pages
+                    bookViewModel.apply {
+                        this.bookTitle = bookTitle
+                        this.bookAuthor = bookAuthor
+                        this.pages = pages
+                        this.coverImageUrl = coverImageUrl
                     }
+
+                    updateUI()
                 } catch (e: Exception) {
                     Toast.makeText(this@MainActivity, e.message, Toast.LENGTH_SHORT).show()
                 }
@@ -87,8 +95,20 @@ class MainActivity : AppCompatActivity() {
                 }
                 Toast.makeText(this@MainActivity, errorMessage, Toast.LENGTH_SHORT).show()
             }
-
         })
+    }
+
+    private fun updateUI() {
+        binding.apply {
+            tvTitleResult.text = bookViewModel.bookTitle
+            tvAuthorResult.text = bookViewModel.bookAuthor
+            tvPages.text = bookViewModel.pages
+
+            // Laden und Anzeigen des Buchcover-Fotos
+            Glide.with(this@MainActivity)
+                .load(bookViewModel.coverImageUrl)
+                .into(tvBookImg)
+        }
     }
 
     companion object {

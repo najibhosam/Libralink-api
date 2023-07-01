@@ -58,4 +58,10 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center"/>
 
+    <ImageView
+        android:id="@+id/tvBookImg"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:srcCompat="@drawable/ic_launcher_foreground" />
+
 </LinearLayout>
